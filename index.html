@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NOMARO Campaign Calendar</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel for in-browser JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body { margin: 0; padding: 0; background-color: #0f0f10; color: #fafafa; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .font-serif { font-family: 'Instrument Serif', serif; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0f0f10; }
+    ::-webkit-scrollbar-thumb { background: #5e5e63; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #f15e27; }
+    
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #5e5e63; border-radius: 4px; }
+
+    html { scroll-behavior: smooth; }
+    [contenteditable]:empty:before { content: attr(placeholder); color: #5e5e63; pointer-events: none; display: block; }
+    
+    .rich-text { line-height: 1.7; }
+    .rich-text ul { list-style-type: disc !important; padding-left: 1.5em !important; margin: 1em 0 !important; }
+    .rich-text ol { list-style-type: decimal !important; padding-left: 1.5em !important; margin: 1em 0 !important; }
+    .rich-text li { margin-bottom: 0.5em !important; }
+    .rich-text p, .rich-text div { margin-bottom: 1.25em !important; min-height: 1em; }
+    .rich-text strong { color: #fafafa; font-weight: 700; }
+    .rich-text em { color: #fafafa; font-style: italic; opacity: 0.9; }
+    .rich-text *:last-child { margin-bottom: 0 !important; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    
+    // --- 100% DEPENDENCY-FREE SVG ICONS ---
+    const SVG_ICONS = {
+      Calendar: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
+      Film: <><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></>,
+      Video: <><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></>,
+      FileText: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></>,
+      Image: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></>,
+      Volume2: <><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></>,
+      Globe: <><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>,
+      Clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+      Activity: <><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></>,
+      Navigation: <><polygon points="3 11 22 2 13 21 11 13 3 11"/></>,
+      PlayCircle: <><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></>,
+      GripVertical: <><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></>,
+      Trash2: <><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></>,
+      Plus: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+      Bold: <><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></>,
+      Italic: <><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></>,
+      Underline: <><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></>,
+      Edit3: <><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>,
+      Eye: <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>,
+      Briefcase: <><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></>,
+      Lock: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+      Lightbulb: <><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></>,
+      List: <><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>,
+      ListOrdered: <><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></>,
+      Download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>,
+      Upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></>,
+      CheckCircle: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
+      AlertCircle: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>
+    };
+
+    const Icon = ({ name, className }) => {
+      if (!SVG_ICONS[name]) return null;
+      return (
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className={className}
+        >
+          {SVG_ICONS[name]}
+        </svg>
+      );
+    };
+
+    const generateId = () => Math.random().toString(36).substr(2, 9);
+
+    // --- INITIAL CAMPAIGN DATA ---
+    const initialData = [
+      {
+        phase: "1",
+        title: "THE INTERRUPTION",
+        timeframe: "Day -60 to -44",
+        objective: "Introduce NOMARO as a mysterious emotional presence rather than a product. Interrupt feeds. Create intrigue. Make NOMARO feel discovered instead of advertised.",
+        budget: { mediaProduction: "₹12,50,000", performanceMarketing: "To be determined", agencyCharges: "₹1,50,000" },
+        events: [
+          { id: generateId(), day: "-60", name: "00° - Signal Detected", type: "REEL | Silhouette Reveal", desc: "A simple, striking teaser showing just the outline of the bag. It’s designed to stand out in crowded social media feeds and make people curious about the NOMARO brand before they even know what the exact product is.", icon: "Video", budget: "₹25,000" },
+          { id: generateId(), day: "-58 to -46", name: "The Weight Series", type: "DOC | Emotional Testimonial", desc: "A series of heartfelt, documentary-style videos. Real people share their personal stories about ambition and the pressures of daily life, helping viewers emotionally connect with the brand right from the start.", icon: "FileText", budget: "₹1,50,000" },
+          { id: generateId(), day: "-56", name: "The Sound of Ambition", type: "ASMR | Ambient Soundscape", desc: "A relaxing, audio-focused video that uses the premium sounds of the bag—like the smooth pull of a zipper or the rustle of high-quality fabric—mixed with the calm sounds of a rainy city to create a unique viewer experience.", icon: "Volume2", budget: "₹40,000" },
+          { id: generateId(), day: "-54", name: "Material Language", type: "REEL | Macro Product Film", desc: "Extreme close-up shots that highlight the beautiful textures, strong stitching, and premium hardware of the bag. This shows off the high quality and craftsmanship without revealing the whole bag just yet.", icon: "Video", budget: "₹60,000" },
+          { id: generateId(), day: "-48", name: "NORTHBOUND", type: "REEL | Typography Motion", desc: "A fast-paced, text-based video that displays our brand's core beliefs. It uses bold, stylish words about ambition and moving forward to build excitement and brand identity.", icon: "Video", budget: "₹30,000" },
+          { id: generateId(), day: "-44", name: "Latitude Zero 1 - Founder Philosophy", type: "FILM | Founder Philosophy", desc: "A foundational video featuring the founder. It introduces our main message, 'Carry Your Tomorrow,' and explains the heartfelt, personal reasons why this brand was created.", icon: "Film", budget: "₹2,50,000" },
+        ]
+      },
+      {
+        phase: "2",
+        title: "HUMAN STORIES",
+        timeframe: "Day -45 to -31",
+        objective: "Position NOMARO as the identity of ambitious young Indians building their future.",
+        budget: { mediaProduction: "₹14,00,000", performanceMarketing: "To be determined", agencyCharges: "₹1,50,000" },
+        events: [
+          { id: generateId(), day: "-45", name: "Story 01 - The Transition", type: "FILM | Character Narrative", desc: "A short film about a young creator moving to a new city to chase their dreams. It captures the mixed feelings of uncertainty and excitement that come with a big life change, making the brand highly relatable.", icon: "Film", budget: "₹2,00,000" },
+          { id: generateId(), day: "-43", name: "City Between Dreams", type: "REEL | Urban Atmosphere", desc: "A visually stunning collection of cityscapes, subway rides, and busy streets. It sets the mood for the brand, associating NOMARO with the energy of city life and continuous movement.", icon: "Video", budget: "₹40,000" },
+          { id: generateId(), day: "-41", name: "LONGITUDE 1 - Workflow - Nurse", type: "PHOTOSTORY | Organic Integration", desc: "A series of photos showing the bag being naturally used by a nurse during a busy shift. This proves the bag is practical, organized, and reliable for demanding, everyday jobs.", icon: "Image", budget: "₹35,000" },
+          { id: generateId(), day: "-39", name: "Environmental Storytelling", type: "EDITORIAL | Environmental Still", desc: "Beautiful photography showing the bag resting in quiet transit spaces, like an empty airport early in the morning. It symbolizes the calm, thoughtful moments before a big journey begins.", icon: "Image", budget: "₹40,000" },
+          { id: generateId(), day: "-37", name: "Typography Manifesto", type: "EDITORIAL | Manifesto Series", desc: "Clean, easy-to-read image posts for social media. These feature short, inspiring quotes about ambition and progress that people will easily relate to and want to share with their friends.", icon: "FileText", budget: "₹15,000" },
+          { id: generateId(), day: "-35", name: "LONGITUDE 2 - Workflow - Startup Founder", type: "PHOTOSTORY | Organic Integration", desc: "Photos of a startup founder using the bag in a fast-paced work environment. It highlights how easy it is to quickly grab a laptop or essentials from the bag during a busy day.", icon: "Image", budget: "₹35,000" },
+          { id: generateId(), day: "-33", name: "Story 02 - The Silent Grind", type: "FILM | Creative Narrative", desc: "A video capturing the feeling of working late into the night. It highlights the dedication and quiet hard work required to achieve your goals, deeply connecting with our ambitious target audience.", icon: "Film", budget: "₹1,50,000" },
+          { id: generateId(), day: "-32", name: "What Future Are You Carrying?", type: "DOC | Street Interview", desc: "Casual, on-the-street interviews where we ask everyday people about their goals and what they are working towards. This makes the brand feel approachable and grounded in real life.", icon: "FileText", budget: "₹80,000" },
+          { id: generateId(), day: "-31", name: "Product Atmosphere", type: "REEL | Aspirational Montage", desc: "A fast, exciting montage video that mixes energetic city life with the sleek look of the NOMARO bag. It is designed to grab attention quickly and build a modern, aspirational vibe.", icon: "Video", budget: "₹45,000" },
+        ]
+      },
+      {
+        phase: "3",
+        title: "WORLD BUILDING",
+        timeframe: "Day -30 to -21",
+        objective: "Expand NOMARO from a mysterious object into a believable lifestyle ecosystem rooted in creators, movement and ambition.",
+        budget: { mediaProduction: "₹18,00,000", performanceMarketing: "To be determined", agencyCharges: "₹1,50,000" },
+        events: [
+          { id: generateId(), day: "-30", name: "Website Unlock", type: "DIGITAL | Website Launch", desc: "The official launch of our beautiful, easy-to-use website. It is designed to feel like flipping through a high-end magazine, making the shopping and browsing experience enjoyable and premium.", icon: "Globe", budget: "₹2,50,000" },
+          { id: generateId(), day: "-28", name: "Engineered Utility", type: "REEL | Utility Breakdown", desc: "A practical video showing exactly how NOMARO solves common problems. We show a messy, disorganized bag next to our perfectly organized NOMARO bag to clearly prove its daily value.", icon: "Video", budget: "₹50,000" },
+          { id: generateId(), day: "-26", name: "Coordinates 01 - Filmmaker", type: "Mini-Doc | Portrait", desc: "A short documentary following a filmmaker at work. It shows how the bag isn't just an accessory, but an essential, reliable companion that helps them handle the pressure of their creative job.", icon: "FileText", budget: "₹1,00,000" },
+          { id: generateId(), day: "-25", name: "Coordinates 01 - What's In Their Bag?", type: "REEL | Workflow Breakdown", desc: "A satisfying, top-down video where the filmmaker neatly packs all their expensive gear into the bag. It perfectly demonstrates how much the bag can hold and how it protects delicate items.", icon: "Video", budget: "₹30,000" },
+          { id: generateId(), day: "-23", name: "28°C Rain Commute", type: "FILM | Environmental Utility", desc: "A video showing the bag being used in heavy rain. This proves to the audience that the bag's water-resistant materials and special zippers will keep their laptops and belongings safe and dry in bad weather.", icon: "Film", budget: "₹1,50,000" },
+          { id: generateId(), day: "-21", name: "Story 3 - The Return", type: "FILM | Identity Narrative", desc: "An emotional short story about a professional balancing their success with personal sacrifices. It connects the physical bag to the deeper, emotional journey of reaching your goals.", icon: "Film", budget: "₹2,00,000" },
+        ]
+      },
+      {
+        phase: "4",
+        title: "PRODUCT LANGUAGE",
+        timeframe: "Day -20 to -10",
+        objective: "Shift focus from emotional storytelling toward utility, craftsmanship and premium engineering without losing cinematic identity.",
+        budget: { mediaProduction: "₹15,50,000", performanceMarketing: "To be determined", agencyCharges: "₹1,50,000" },
+        events: [
+          { id: generateId(), day: "-20", name: "Product System", type: "FILM | Product Reveal", desc: "A clean, bright video dedicated entirely to showing the product clearly. It gives viewers a full, 360-degree look at the bag's design, pockets, and solid structure without any distractions.", icon: "Film", budget: "₹2,50,000" },
+          { id: generateId(), day: "-19", name: "Sensory Hardware", type: "ASMR | Hardware Sounds", desc: "A satisfying video focused on the physical feel of the bag. We highlight the crisp 'click' of the magnetic buckles and the smooth glide of the zippers to really show off the premium build quality.", icon: "Volume2", budget: "₹40,000" },
+          { id: generateId(), day: "-18", name: "Precision Details", type: "REEL | Precision Macro", desc: "Extremely close-up video shots focusing on the fine craftsmanship. It shows off the strong, durable stitching, the high-quality fabric, and our signature NOMARO orange details.", icon: "Video", budget: "₹50,000" },
+          { id: generateId(), day: "-16", name: "Coordinates 02 - Architect", type: "Mini-Doc | Portrait", desc: "A short video profiling an architect. It contrasts the grand scale of the buildings they design with the precise details of their work tools, showing how our bag perfectly fits into their professional life.", icon: "FileText", budget: "₹1,00,000" },
+          { id: generateId(), day: "-15", name: "Coordinates 02 - What's In Their Bag?", type: "REEL | Flatlay Breakdown", desc: "A visually pleasing video showing an architect packing their specific tools, like large blueprints and tablets. This shows that the bag is perfect for specialized, professional needs.", icon: "Video", budget: "₹30,000" },
+          { id: generateId(), day: "-13", name: "Carry Your Tomorrow", type: "FILM | Brand Philosophy", desc: "An inspiring video featuring multiple professionals—like a doctor and a designer—all connected by their ambition. It brings our main brand message to life through their everyday routines.", icon: "Film", budget: "₹3,00,000" },
+          { id: generateId(), day: "-11", name: "TEMP//42° Urban Heat", type: "Environmental Utility Film", desc: "A video showing the bag being used on a very hot day in the city. It highlights the breathable materials on the back of the bag that keep you comfortable and sweat-free in the heat.", icon: "Film", budget: "₹1,50,000" },
+          { id: generateId(), day: "-10", name: "Pricing Reveal", type: "CAMPAIGN | Value Positioning", desc: "A clear, beautifully designed graphic post that announces the price. We frame the cost as a long-term investment, focusing on the bag's incredible durability and the value of high-quality materials.", icon: "Activity", budget: "₹25,000" },
+        ]
+      },
+      {
+        phase: "5",
+        title: "DESIRE & OWNERSHIP",
+        timeframe: "Day -11 to -4",
+        objective: "Make audiences emotionally imagine ownership while increasing exclusivity and anticipation.",
+        budget: { mediaProduction: "₹16,00,000", performanceMarketing: "To be determined", agencyCharges: "₹1,50,000" },
+        events: [
+          { id: generateId(), day: "-11", name: "Tomorrow Begins", type: "FILM | Launch Prelude", desc: "A quiet, beautiful video showing people waking up early and preparing for their day before the sun comes up. It builds a sense of calm anticipation right before the big launch.", icon: "Film", budget: "₹1,50,000" },
+          { id: generateId(), day: "-11 to -10", name: "Founders Access", type: "CAMPAIGN | Early Access", desc: "A special early-access pass for our most loyal email subscribers. We offer them a chance to buy the bag before the general public, making them feel like VIPs and rewarding their early support.", icon: "Clock", budget: "₹30,000" },
+          { id: generateId(), day: "-10", name: "10 Days Remaining", type: "CAMPAIGN | Countdown Reveal", desc: "An exciting, stylish countdown video that clearly shows there are only 10 days left. It’s designed to build suspense and make people eager for the launch day.", icon: "Clock", budget: "₹20,000" },
+          { id: generateId(), day: "-9", name: "Urban Velocity", type: "REEL | Movement Montage", desc: "A fast-paced video showing people moving quickly through the city. It connects the brand with the feeling of unstoppable momentum and getting things done.", icon: "Video", budget: "₹45,000" },
+          { id: generateId(), day: "-8", name: "Lifestyle Movement", type: "REEL | Urban Mobility", desc: "A casual video that looks like it was shot on a phone by a friend. It shows the bag being used naturally in everyday life, making the product feel very relatable and easy to carry.", icon: "Video", budget: "₹40,000" },
+          { id: generateId(), day: "-7", name: "7-Day Countdown", type: "REEL | Utility Countdown", desc: "Daily social media posts leading up to the launch. Each day we highlight one specific, cool feature of the bag to keep people interested and learning about the product.", icon: "Clock", budget: "₹35,000" },
+          { id: generateId(), day: "-7", name: "Coordinates 03 - Musician", type: "Mini-Doc | Portrait", desc: "A short video about a musician's daily routine. It shows how the bag helps them transition smoothly from a chaotic music studio to a calm commute home.", icon: "FileText", budget: "₹1,00,000" },
+          { id: generateId(), day: "-6", name: "Coordinates 03 - What's In Their Bag?", type: "REEL | Workflow Breakdown", desc: "An upbeat packing video showing how a musician securely fits delicate items like headphones and hard drives into the bag, proving it protects fragile, expensive gear.", icon: "Video", budget: "₹30,000" },
+          { id: generateId(), day: "-5", name: "Full Reveal", type: "FILM | Hero Reveal", desc: "The big reveal video. A beautiful, uninterrupted look at the final bag in all its glory, finally showing the complete design and shape to our audience.", icon: "Film", budget: "₹2,00,000" },
+          { id: generateId(), day: "-5", name: "Latitude Zero 2 - Founder Philosophy", type: "FILM | Founder Philosophy", desc: "An honest, heart-to-heart video where the founder speaks directly to the camera about the sacrifices, hard work, and ambitions that led to creating this brand.", icon: "Film", budget: "₹1,50,000" },
+          { id: generateId(), day: "-4", name: "LONGITUDE 3 - Workflow - Chef", type: "PHOTOSTORY | Organic Integration", desc: "Photos showing the bag in a busy, intense restaurant kitchen. This proves that the bag is tough enough to handle spills, drops, and fast-paced, messy environments.", icon: "Image", budget: "₹35,000" },
+        ]
+      },
+      {
+        phase: "6",
+        title: "FINAL ESCALATION",
+        timeframe: "Day -4 to Day 1",
+        objective: "Increase anticipation aggressively through product reveals, philosophy reinforcement and cinematic launch preparation.",
+        budget: { mediaProduction: "₹25,00,000", performanceMarketing: "To be determined", agencyCharges: "₹1,50,000" },
+        events: [
+          { id: generateId(), day: "-4", name: "Built For Creators", type: "FILM | Lifestyle Utility", desc: "A fast-moving video that shows the bag being used by different types of professionals, proving it’s versatile and perfect for anyone who is serious about their work, no matter the industry.", icon: "Film", budget: "₹2,50,000" },
+          { id: generateId(), day: "-3", name: "The Commute", type: "REEL | Urban Identity", desc: "A video focused entirely on travel, showing people biking, taking the train, or walking with the bag. It highlights how comfortable, lightweight, and stable the bag is while on the move.", icon: "Video", budget: "₹60,000" },
+          { id: generateId(), day: "-3", name: "VIP Early Access", type: "CAMPAIGN | Private Access", desc: "A private launch moment just for the people on our VIP list. They get a secret password to enter the website and secure their purchase before anyone else.", icon: "Clock", budget: "₹25,000" },
+          { id: generateId(), day: "-3", name: "Hero Showcase", type: "FILM | Product Showcase", desc: "The ultimate product video. It combines beautiful close-ups of the bag's details with inspiring footage of people using it, creating a ton of excitement just days before launch.", icon: "Film", budget: "₹3,50,000" },
+          { id: generateId(), day: "-3", name: "The Master Film", type: "FILM | Brand Anthem", desc: "Our main, hero campaign video. It brings together all the emotions, stories, and beautiful visuals we've built up over the past two months into one powerful, inspiring commercial.", icon: "PlayCircle", budget: "₹5,00,000" },
+          { id: generateId(), day: "-2", name: "Trailer Cutdowns", type: "Short Performance Ads", desc: "Short, punchy versions of our main video. We use these quick ads across social media to remind people who have shown interest to come back and make a purchase.", icon: "Video", budget: "₹50,000" },
+          { id: generateId(), day: "-1", name: "First Orders", type: "REEL | Community Reactions", desc: "A post sharing the excitement of our very first customers. We show real screenshots of people ordering the bag to show that others are already buying it, creating a sense of trust and urgency.", icon: "Video", budget: "₹15,000" },
+          { id: generateId(), day: "0", name: "NOMARO IS LIVE", type: "REEL | Community Reactions", desc: "The official public launch announcement. A big, exciting post across all our platforms letting everyone know that the website is open and the bags are finally available to buy.", icon: "Globe", budget: "₹25,000" },
+          { id: generateId(), day: "+1", name: "Degree Stories", type: "DOC | Community Reflection", desc: "Videos featuring our real, everyday customers sharing their own stories about ambition and personal growth. This turns our buyers into the stars of our brand.", icon: "FileText", budget: "₹1,00,000" },
+        ]
+      },
+      {
+        phase: "7",
+        title: "CULTURE & MOVEMENT",
+        timeframe: "Day 0 to Day 14",
+        objective: "Transform launch customers into a community and establish NOMARO as a long-term cultural identity brand.",
+        budget: { mediaProduction: "₹12,00,000", performanceMarketing: "To be determined", agencyCharges: "₹1,50,000" },
+        events: [
+          { id: generateId(), day: "0", name: "The Thank You", type: "FILM | Founder Letter", desc: "A genuine, casual thank-you video from the founder to everyone who bought a bag. It shows deep appreciation and makes customers feel like they are part of a special, exclusive community.", icon: "Film", budget: "₹50,000" },
+          { id: generateId(), day: "+2", name: "Where Are You Carrying Tomorrow?", type: "CAMPAIGN | UGC Activation", desc: "A social media campaign asking our followers to share their own stories and photos using the bag. It’s a fun way to get the community involved and talking about us online.", icon: "Activity", budget: "₹30,000" },
+          { id: generateId(), day: "+3", name: "Community Spotlight", type: "REEL | Customer Montage", desc: "A quick, exciting video made from clips and photos posted by our new customers. It shows real people enjoying their new bags in their daily lives.", icon: "Video", budget: "₹25,000" },
+          { id: generateId(), day: "+5", name: "Movement Stories", type: "DOC | Community Documentary", desc: "More interviews with people who bought the bag, talking about how they use it in their daily routines. It proves that the bag lives up to the hype in the real world.", icon: "FileText", budget: "₹80,000" },
+          { id: generateId(), day: "+6", name: "Coordinates 04 - Fashion Stylist", type: "Mini-Doc | Portrait", desc: "A stylish video following a busy fashion stylist. It shows how the bag helps them stay organized when dealing with lots of clothes, pins, and accessories on the go.", icon: "FileText", budget: "₹1,00,000" },
+          { id: generateId(), day: "+8", name: "Coordinates 04 - What's In Their Bag?", type: "REEL | Workflow Breakdown", desc: "A fun, visually pleasing video showing exactly how a fashion stylist fits all their bulky and delicate items into the bag without anything getting ruined.", icon: "Video", budget: "₹30,000" },
+          { id: generateId(), day: "+10", name: "Creator Continuation", type: "REEL | Lifestyle Integration", desc: "Ongoing partnerships with influencers and creators. We have them naturally show the bag in their videos to keep the brand popular and relevant long after the initial launch.", icon: "Video", budget: "₹50,000" },
+          { id: generateId(), day: "+12", name: "Carry Forward - Expansion", type: "FILM | LONGFORM", desc: "A longer, inspiring video that looks towards the future of the brand. It talks about our ongoing mission to design products that support ambitious people on the move.", icon: "Film", budget: "₹2,50,000" },
+          { id: generateId(), day: "+14", name: "Carry Forward", type: "FILM | Community Montage", desc: "A final wrap-up video for the campaign. It mixes our professional footage with videos taken by our customers, celebrating the community we've built together over the launch.", icon: "PlayCircle", budget: "₹1,50,000" },
+        ]
+      }
+    ];
+
+    // --- INITIAL STORY IDEAS DATA ---
+    const initialStories = [
+      {
+        id: generateId(),
+        title: "1. THE WEDDING SAREE",
+        content: "<p><strong>FILM | Mother Narrative</strong></p><p>She opens the cupboard quietly while everyone else is asleep. Folded carefully on the top shelf is her wedding saree. Twenty-six years old. Still smelling faintly of sandalwood and old memories.</p><p>Tomorrow, her daughter leaves for another city for her first job. The house has been busy all week with packing, advice and relatives pretending not to cry. But tonight, the mother sits alone on the floor holding the saree in her lap.</p><p>She remembers being the same age once. Terrified. Hopeful. Carrying dreams too large for the town she grew up in.</p><p>The next morning, while helping her daughter pack the NOMARO bag, she quietly places a small cloth pouch inside. Later, on the train, the daughter opens it. Inside is a tiny piece cut from the border of the wedding saree along with a note:</p><p><em>“So you never feel alone anywhere.”</em></p><p>The daughter presses the cloth against her face silently while the train moves forward. Outside, cities change. Inside the bag, home travels with her.</p><p><strong>NOMARO</strong><br/> Carry Your Tomorrow.</p>"
+      },
+      {
+        id: generateId(),
+        title: "2. THE UNOPENED TIFFIN",
+        content: "<p><strong>FILM | Father Narrative</strong></p><p>Every morning before school, his daughter packs his lunch for him. Not because she has to. Because she likes doing “grown-up work” before wearing her tiny school uniform. One chapati folded badly. Too much pickle. Rice pressed unevenly into the steel container.</p><p>He never corrects her.</p><p>At the construction site, his NOMARO bag hangs from a rusted nail beside half-built concrete walls while dust fills the air around him. By lunchtime, the other workers open their meals together. He opens his too. Inside the tiffin is a small sticky note written in shaky handwriting:</p><p><em>“Eat full. Don’t share.”</em></p><p>He laughs loudly for the first time that day. The other workers ask what happened. “Nothing,” he says while folding the paper carefully into his wallet.</p><p>That evening, he reaches home exhausted, shoulders aching from carrying bricks all day. His daughter runs to the door immediately. “Acha, did you eat everything?” He nods seriously. “Not even one grain left.” She smiles proudly like she accomplished something important.</p><p>And maybe she did. Because all day, while carrying the weight of buildings for strangers, he was also carrying proof that somewhere in the world, somebody still waits to know if he ate lunch.</p><p><strong>NOMARO</strong><br/> Carry Your Tomorrow.</p>"
+      },
+      {
+        id: generateId(),
+        title: "3. THE FIRST FLIGHT",
+        content: "<p><strong>FILM | Emotional Journey Narrative</strong></p><p>She has never been inside an airport before. Everything feels unfamiliar. The announcements. The lights. The people walking quickly with confidence she wishes she had.</p><p>Her NOMARO bag rests tightly against her shoulder while she checks her ticket for the fifth time. Around her, families hug goodbye casually, like leaving cities is normal. For her, this journey changes everything.</p><p>Her younger brother secretly slipped a chocolate bar into her bag before she left home that morning. “Eat during the flight,” he whispered proudly, like he was helping with something important. She smiles remembering it while waiting near the boarding gate.</p><p>The job offer took years to reach. Years of exams. Rejections. Sleepless nights studying beside a noisy ceiling fan while the rest of the family slept. Now her parents stand behind the glass barrier outside the airport entrance, watching her from a distance even though they already said goodbye twenty minutes ago.</p><p>Her father keeps pretending to check his phone because he does not want her to see him cry.</p><p>When boarding finally begins, she takes one deep breath and starts walking forward. Nervous. Excited. Terrified. Ready.</p><p>Inside the bag are documents, clothes and a future her family built sacrifice by sacrifice. Some journeys begin with confidence. Others begin with courage pretending to look like confidence.</p><p><strong>NOMARO</strong><br/> Carry Your Tomorrow.</p>"
+      },
+      {
+        id: generateId(),
+        title: "4. THE NIGHT SHIFT",
+        content: "<p><strong>FILM | Human Narrative</strong></p><p>It is 1:32 AM when she finally sits down. The hospital cafeteria is almost empty except for the sound of a vending machine humming in the corner. Her hair is tied hurriedly. There is a faint mark on her face from wearing a mask for too many hours.</p><p>Beside her chair sits her NOMARO bag. Still unopened since the beginning of the shift.</p><p>She slowly takes out a steel lunchbox wrapped in a kitchen towel. The food is cold now. Before taking a bite, she notices a small folded note tucked inside. Her father’s handwriting:</p><p><em>“Eat before it gets cold this time.”</em></p><p>She laughs softly to herself because somehow, even at twenty-eight years old, he still worries like she is leaving for school.</p><p>A nurse calls her name from the hallway. Another emergency. She closes the lunchbox halfway through the meal and stands up immediately. No complaints. No hesitation. Just duty.</p><p>Hours later, as the first light of morning enters through the hospital windows, she walks out exhausted, shoulders heavy from carrying everyone else’s pain through the night.</p><p>But before getting into the cab home, she opens her bag once more and finishes the last bite of food while it is still a little warm.</p><p>Some people carry laptops. Some people carry cameras. She carries lives home safely.</p><p><strong>NOMARO</strong><br/> Carry Your Tomorrow.</p>"
+      },
+      {
+        id: generateId(),
+        title: "5. THE SILENT GRIND",
+        content: "<p><strong>FILM | Creative Narrative</strong></p><p>Most people only see the final upload. Nobody sees the nights behind it.</p><p>2:14 AM. The editing timeline stretches endlessly across the screen. Empty coffee cups sit beside tangled cables and hard drives. Outside, the city is asleep. Inside, he is still working.</p><p>His NOMARO bag rests beside the desk, slightly open, filled with batteries, notebooks and yesterday’s unfinished life. He watches the same sequence again. Then again. A transition slightly off. A sound cut too sharp. A colour that does not feel right yet.</p><p>Nobody asked him to care this much. He just does.</p><p>Hours disappear quietly. His shoulders ache. His eyes burn. Friends stopped texting hours ago. The only sounds left in the room are keyboard clicks and the low hum of the laptop fan. Still, he continues. Because somewhere between exhaustion and love for the craft, something beautiful starts happening.</p><p>The film slowly becomes what he imagined.</p><p>At 4:47 AM, the export finally completes. He leans back and watches the finished piece alone in the dark. And he smiles. Not because millions will watch it. Not because anyone may even notice the tiny details he obsessed over. But because something that only existed inside his mind is now real.</p><p>Morning light slowly enters through the curtains. He closes the laptop gently and packs it into his NOMARO bag before heading out again. Another client. Another deadline. Another dream to carry.</p><p>The bag is worn now. Small scratches near the zip. Coffee stains near the strap. Proof that he kept going.</p><p>Some people carry equipment. Others carry hope disguised as hard work.</p><p><strong>NOMARO</strong><br/> Carry Your Tomorrow.</p>"
+      },
+      {
+        id: generateId(),
+        title: "6. THE HARMONICA",
+        content: "<p><strong>FILM | Young Love Narrative</strong></p><p>Every evening after work, she stops near the small music shop beside the bus stand. Not to buy anything. Just to look. Inside the glass shelf sits a tiny silver harmonica she picks up almost every week before placing it back carefully.</p><p>Once, months ago, she casually mentioned to her boyfriend that her grandfather used to play harmonica during power cuts when she was little. “I always wanted to learn,” she had laughed. She forgot the conversation by the next morning.</p><p>He did not.</p><p>For the next two months, she notices small changes without understanding why. He stops ordering food during office breaks. Walks instead of taking autos. Says he is “trying to save money.”</p><p>One evening before her birthday, he arrives late carrying his NOMARO backpack unusually carefully. They sit together on the staircase outside her apartment because the power has gone out again. The entire building glows softly under emergency lights and candlelight leaking through windows.</p><p>Halfway through conversation, he quietly opens the front compartment of the bag and removes a small wrapped package. Inside is the harmonica. Tiny. Silver. Slightly scratched near one edge. Not brand new. But polished carefully.</p><p>She stares at it silently for a few seconds before noticing something else. Tucked beside it is a handwritten note:</p><p><em>“So you can carry music everywhere.”</em></p><p>Her eyes immediately fill. Not because of the instrument itself. Because she suddenly understands how long he must have remembered something she only said once.</p><p>Years later, after bigger jobs, busier schedules and an apartment of their own, the harmonica still remains in the drawer beside their bed. Sometimes on sleepless nights, she still plays the same imperfect tune she learned first. And every single time, he still smiles like it is the most beautiful thing he has ever heard.</p><p><strong>NOMARO</strong><br/> Carry Your Tomorrow.</p>"
+      },
+      {
+        id: generateId(),
+        title: "7. THE STAIRS",
+        content: "<p><strong>FILM | Grandparent Narrative</strong></p><p>The apartment building has no lift. Every evening after tuition class, the little girl climbs four floors carrying her oversized school bag while her grandfather follows slowly behind her with the heavier things.</p><p>Her water bottle. Art folder. Lunch carrier. All packed neatly inside his NOMARO tote.</p><p>Halfway up the stairs, he stops to catch his breath. “Too tired?” she asks. “Old people walk dramatically,” he replies seriously. She laughs loudly.</p><p>Every day, the climb takes longer than it should because she keeps stopping to tell him stories from school. Who fought with whom. Which teacher shouted. Which friend shared chips during lunch. He listens carefully to every detail like these are the most important stories in the world.</p><p>Because to him, they are.</p><p>One rainy evening, she notices him struggling slightly more than usual while climbing. Quietly, without saying anything, she takes the tote from his hand and carries it herself for the remaining stairs. It swings awkwardly against her tiny shoulder because it is clearly too heavy. Still, she refuses to give it back.</p><p>At the apartment door, he looks at her for a moment and smiles softly. Because somewhere between childhood and growing up, love had quietly changed direction.</p><p><strong>NOMARO</strong><br/> Carry Your Tomorrow.</p>"
+      }
+    ];
+
+    // --- EDITABLE TEXT COMPONENT ---
+    const ContentEditable = ({ html, tagName, className, onChange, isEditMode, placeholder }) => {
+      const contentEditableRef = useRef(null);
+
+      useEffect(() => {
+        if (contentEditableRef.current && html !== contentEditableRef.current.innerHTML) {
+          contentEditableRef.current.innerHTML = html;
+        }
+      }, [html]);
+
+      const handleBlur = (e) => {
+        onChange(e.target.innerHTML);
+      };
+
+      return React.createElement(tagName || 'div', {
+        ref: contentEditableRef,
+        className: `${className} outline-none transition-all duration-200 ${
+          isEditMode ? 'hover:bg-[#fafafa]/5 focus:bg-[#fafafa]/10 ring-1 ring-transparent focus:ring-[#f15e27]/50 rounded-md px-2 py-1 -ml-2' : ''
+        }`,
+        contentEditable: isEditMode,
+        onBlur: handleBlur,
+        dangerouslySetInnerHTML: { __html: html },
+        placeholder: isEditMode ? placeholder : '',
+        style: { minHeight: isEditMode ? '1.5em' : 'auto' }
+      });
+    };
+
+    function App() {
+      const [activePhase, setActivePhase] = useState(0);
+      const [campaigns, setCampaigns] = useState(initialData);
+      const [stories, setStories] = useState(initialStories);
+      const [isEditMode, setIsEditMode] = useState(false);
+      const [launchDate, setLaunchDate] = useState("");
+      const fileInputRef = useRef(null);
+      
+      // Pin Modal State
+      const [showPinModal, setShowPinModal] = useState(false);
+      const [pinInput, setPinInput] = useState('');
+      const [pinError, setPinError] = useState(false);
+
+      // Toast Notification
+      const [toastMsg, setToastMsg] = useState("");
+
+      // Drag and drop state
+      const [dragInfo, setDragInfo] = useState(null);
+
+      const showToast = (msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(""), 3000);
+      };
+
+      // --- JSON EXPORT / IMPORT ---
+      const handleExportJson = () => {
+        const dataToExport = {
+          campaigns,
+          stories,
+          launchDate
+        };
+        const jsonString = JSON.stringify(dataToExport, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nomaro-campaign-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Schedule exported successfully!");
+      };
+
+      const handleImportJson = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const parsedData = JSON.parse(e.target.result);
+            if (parsedData.campaigns) setCampaigns(parsedData.campaigns);
+            if (parsedData.stories) setStories(parsedData.stories);
+            if (parsedData.launchDate !== undefined) setLaunchDate(parsedData.launchDate);
+            showToast("Schedule imported successfully!");
+          } catch (error) {
+            showToast("Error: Invalid JSON file format.");
+          }
+        };
+        reader.readAsText(file);
+        event.target.value = null; // reset input
+      };
+
+      // --- PIN LOGIC ---
+      const handleEditToggle = () => {
+        if (isEditMode) {
+          setIsEditMode(false);
+        } else {
+          setShowPinModal(true);
+          setPinInput('');
+          setPinError(false);
+        }
+      };
+
+      const handlePinSubmit = (e) => {
+        e.preventDefault();
+        if (pinInput === '5599') {
+          setIsEditMode(true);
+          setShowPinModal(false);
+          setPinInput('');
+        } else {
+          setPinError(true);
+        }
+      };
+
+      // --- DATE CALCULATOR ---
+      const calculateDate = (dayString, baseDateStr) => {
+        if (!baseDateStr) return dayString;
+        
+        const processSingleDay = (dStr) => {
+          const num = parseInt(dStr.replace(/[^0-9-]/g, ''), 10);
+          if (isNaN(num)) return dStr;
+          
+          const date = new Date(baseDateStr);
+          date.setDate(date.getDate() + num);
+          
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        };
+
+        if (dayString.includes('to')) {
+          const parts = dayString.split('to').map(p => p.trim());
+          return `${processSingleDay(parts[0])} - ${processSingleDay(parts[1])}`;
+        }
+        
+        return processSingleDay(dayString);
+      };
+
+      // --- CAMPAIGN CRUD OPERATIONS ---
+      const updateEvent = (phaseIdx, eventIdx, field, value) => {
+        const newData = [...campaigns];
+        newData[phaseIdx].events[eventIdx][field] = value;
+        setCampaigns(newData);
+      };
+
+      const addEvent = (phaseIdx) => {
+        const newData = [...campaigns];
+        newData[phaseIdx].events.push({
+          id: generateId(),
+          day: "TBD",
+          name: "New Campaign Asset",
+          type: "TYPE | Format",
+          desc: "Add a description of this campaign beat here...",
+          icon: "Video",
+          budget: "₹0"
+        });
+        setCampaigns(newData);
+      };
+
+      const deleteEvent = (phaseIdx, eventIdx) => {
+        const newData = [...campaigns];
+        newData[phaseIdx].events.splice(eventIdx, 1);
+        setCampaigns(newData);
+      };
+
+      const updatePhaseBudget = (phaseIdx, field, value) => {
+        const newData = [...campaigns];
+        if (!newData[phaseIdx].budget) {
+          newData[phaseIdx].budget = { mediaProduction: "", performanceMarketing: "", agencyCharges: "" };
+        }
+        newData[phaseIdx].budget[field] = value;
+        setCampaigns(newData);
+      };
+
+      // --- STORY CRUD OPERATIONS ---
+      const addStory = () => {
+        setStories([...stories, { id: generateId(), title: "New Story Concept", content: "<p>Describe the narrative and visual style here...</p>" }]);
+      };
+
+      const updateStory = (id, field, value) => {
+        setStories(stories.map(story => story.id === id ? { ...story, [field]: value } : story));
+      };
+
+      const deleteStory = (id) => {
+        setStories(stories.filter(story => story.id !== id));
+      };
+
+      // --- DRAG & DROP LOGIC ---
+      const handleDragStart = (e, phaseIdx, eventIdx) => {
+        setDragInfo({ phaseIdx, eventIdx });
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => { e.target.style.opacity = '0.5'; }, 0);
+      };
+
+      const handleDragEnd = (e) => {
+        e.target.style.opacity = '1';
+        setDragInfo(null);
+      };
+
+      const handleDragOver = (e, targetPhaseIdx, targetEventIdx) => {
+        e.preventDefault();
+        if (!dragInfo) return;
+        if (dragInfo.phaseIdx === targetPhaseIdx && dragInfo.eventIdx === targetEventIdx) return;
+
+        const newData = [...campaigns];
+        const sourceEvent = newData[dragInfo.phaseIdx].events[dragInfo.eventIdx];
+        
+        newData[dragInfo.phaseIdx].events.splice(dragInfo.eventIdx, 1);
+        newData[targetPhaseIdx].events.splice(targetEventIdx, 0, sourceEvent);
+
+        setCampaigns(newData);
+        setDragInfo({ phaseIdx: targetPhaseIdx, eventIdx: targetEventIdx });
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans relative" style={{ backgroundColor: '#0f0f10', color: '#fafafa', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+
+          {/* TOAST NOTIFICATION */}
+          {toastMsg && (
+            <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-[#f15e27] text-white px-6 py-3 rounded-full font-bold shadow-2xl z-[200] text-sm animate-fade-in-down flex items-center gap-2">
+              <Icon name={toastMsg.includes('Error') ? "AlertCircle" : "CheckCircle"} className="w-4 h-4" />
+              {toastMsg}
+            </div>
+          )}
+
+          {/* PIN MODAL */}
+          {showPinModal && (
+            <div className="fixed inset-0 bg-[#0f0f10]/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+              <form 
+                onSubmit={handlePinSubmit}
+                className="bg-[#1a1a1c] border border-[#5e5e63]/50 p-6 rounded-xl flex flex-col gap-4 w-full max-w-sm shadow-2xl"
+              >
+                <div className="flex items-center gap-3 text-[#f15e27] mb-2">
+                  <Icon name="Lock" className="w-5 h-5" />
+                  <h3 className="text-xl font-bold text-[#fafafa]">Unlock Builder</h3>
+                </div>
+                <p className="text-sm text-[#fafafa]/60 mb-2">Enter the agency PIN to edit the schedule layout and timeline data.</p>
+                
+                <input 
+                  type="password" 
+                  value={pinInput} 
+                  onChange={e => setPinInput(e.target.value)} 
+                  placeholder="Enter PIN"
+                  className={`bg-[#0f0f10] border ${pinError ? 'border-red-500' : 'border-[#5e5e63]'} p-3 rounded-lg text-[#fafafa] font-mono tracking-widest text-center focus:border-[#f15e27] outline-none transition-colors w-full`} 
+                  autoFocus 
+                />
+                {pinError && <span className="text-red-500 text-xs font-mono text-center">Incorrect PIN. Try again.</span>}
+                
+                <div className="flex justify-end gap-3 mt-4">
+                  <button 
+                    type="button"
+                    onClick={() => setShowPinModal(false)} 
+                    className="px-4 py-2 rounded font-bold text-[#fafafa]/60 hover:text-[#fafafa] hover:bg-[#fafafa]/5 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="bg-[#f15e27] hover:bg-[#f15e27]/80 px-6 py-2 rounded-md font-bold text-white transition-colors"
+                  >
+                    Unlock
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* HEADER */}
+          <header className="sticky top-0 z-50 border-b border-[#5e5e63]/30 bg-[#0f0f10]/90 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-xl font-bold tracking-wide uppercase">nomaro</h1>
+                <p className="text-xs text-[#5e5e63] font-mono tracking-widest uppercase mt-0.5">Master Campaign Calendar</p>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+              
+              {/* JSON Controls */}
+              <div className="flex items-center gap-1.5 md:gap-2 mr-0 md:mr-2">
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-md font-bold text-sm bg-[#5e5e63]/10 text-[#fafafa]/80 hover:text-[#fafafa] hover:bg-[#5e5e63]/30 transition-all border border-[#5e5e63]/30"
+                  title="Import .json Workspace"
+                >
+                  <Icon name="Upload" className="w-4 h-4" />
+                  <span className="hidden lg:inline text-xs">Import</span>
+                </button>
+                <button 
+                  onClick={handleExportJson} 
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-md font-bold text-sm bg-[#5e5e63]/10 text-[#fafafa]/80 hover:text-[#fafafa] hover:bg-[#5e5e63]/30 transition-all border border-[#5e5e63]/30"
+                  title="Export .json Workspace"
+                >
+                  <Icon name="Download" className="w-4 h-4" />
+                  <span className="hidden lg:inline text-xs">Export</span>
+                </button>
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  ref={fileInputRef} 
+                  onChange={handleImportJson} 
+                  className="hidden" 
+                />
+              </div>
+
+              <div className="hidden sm:block w-px h-6 bg-[#5e5e63]/30 mx-1"></div>
+
+              {/* Launch Date Setter */}
+              <div className="flex items-center gap-2 bg-[#5e5e63]/20 rounded-md px-3 py-2 border border-[#5e5e63]/30">
+                <Icon name="Calendar" className="w-4 h-4 text-[#f15e27]" />
+                <span className="text-xs font-mono text-[#fafafa]/60 hidden sm:inline">LAUNCH:</span>
+                <input 
+                  type="date" 
+                  value={launchDate}
+                  onChange={(e) => setLaunchDate(e.target.value)}
+                  className="bg-transparent text-xs sm:text-sm font-mono outline-none text-[#fafafa] cursor-pointer"
+                  style={{ colorScheme: 'dark' }}
+                />
+              </div>
+              
+              {/* Edit Mode Toggle */}
+              <button 
+                onClick={handleEditToggle}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md font-bold text-sm transition-all whitespace-nowrap border ${
+                  isEditMode 
+                    ? 'bg-[#f15e27] text-white border-[#f15e27] shadow-[0_0_15px_rgba(241,94,39,0.4)]' 
+                    : 'bg-[#5e5e63]/20 text-[#fafafa] border-[#5e5e63]/30 hover:bg-[#5e5e63]/40'
+                }`}
+              >
+                <Icon name={isEditMode ? "Eye" : "Edit3"} className="w-4 h-4" />
+                {isEditMode ? 'Preview Mode' : 'Edit Schedule'}
+              </button>
+            </div>
+          </header>
+
+          {/* FORMATTING TOOLBAR (Visible only in Edit Mode) */}
+          {isEditMode && (
+            <div className="fixed bottom-6 md:top-24 md:bottom-auto left-1/2 transform -translate-x-1/2 bg-[#1a1a1c] border border-[#5e5e63]/50 rounded-full px-4 py-2 flex items-center gap-2 sm:gap-4 z-40 shadow-2xl backdrop-blur-md">
+              <span className="text-xs font-mono text-[#5e5e63] mr-2 hidden sm:block">FORMAT TEXT</span>
+              <button onMouseDown={e => { e.preventDefault(); document.execCommand('bold'); }} className="text-[#fafafa]/70 hover:text-[#f15e27] transition-colors p-1" title="Bold">
+                 <Icon name="Bold" className="w-4 h-4" />
+              </button>
+              <button onMouseDown={e => { e.preventDefault(); document.execCommand('italic'); }} className="text-[#fafafa]/70 hover:text-[#f15e27] transition-colors p-1" title="Italic">
+                 <Icon name="Italic" className="w-4 h-4" />
+              </button>
+              <button onMouseDown={e => { e.preventDefault(); document.execCommand('underline'); }} className="text-[#fafafa]/70 hover:text-[#f15e27] transition-colors p-1" title="Underline">
+                 <Icon name="Underline" className="w-4 h-4" />
+              </button>
+              <div className="w-px h-4 bg-[#5e5e63]/50 mx-1"></div>
+              <button onMouseDown={e => { e.preventDefault(); document.execCommand('insertUnorderedList'); }} className="text-[#fafafa]/70 hover:text-[#f15e27] transition-colors p-1" title="Bullet List">
+                 <Icon name="List" className="w-4 h-4" />
+              </button>
+              <button onMouseDown={e => { e.preventDefault(); document.execCommand('insertOrderedList'); }} className="text-[#fafafa]/70 hover:text-[#f15e27] transition-colors p-1" title="Numbered List">
+                 <Icon name="ListOrdered" className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* MAIN CONTENT */}
+          <main className="flex-1 flex flex-col lg:flex-row max-w-screen-2xl mx-auto w-full relative">
+            
+            {/* SIDEBAR NAVIGATION */}
+            <aside className="lg:w-72 border-b lg:border-b-0 lg:border-r border-[#5e5e63]/30 p-4 lg:p-6 flex lg:flex-col overflow-x-auto lg:overflow-y-auto lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px)] shrink-0 hide-scrollbar gap-2">
+              
+              <h2 className="text-[10px] font-mono text-[#5e5e63] uppercase tracking-[0.2em] mb-2 hidden lg:block shrink-0">Strategic Timeline</h2>
+              {campaigns.map((phase, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setActivePhase(idx);
+                    document.getElementById(`phase-${idx}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  className={`flex flex-col text-left px-4 py-3 rounded-lg transition-all whitespace-nowrap lg:whitespace-normal duration-300 border shrink-0 lg:shrink ${
+                    activePhase === idx 
+                      ? 'bg-[#f15e27]/10 border-[#f15e27] text-[#f15e27]' 
+                      : 'border-transparent text-[#fafafa]/60 hover:bg-[#5e5e63]/10 hover:text-[#fafafa]'
+                  }`}
+                >
+                  <span className="font-mono text-xs opacity-80 mb-1">PHASE {phase.phase}</span>
+                  <span className="font-bold text-sm tracking-wide truncate lg:whitespace-normal">{phase.title}</span>
+                </button>
+              ))}
+
+              {/* IDEATION NAVIGATION LINK */}
+              <h2 className="text-[10px] font-mono text-[#5e5e63] uppercase tracking-[0.2em] mb-2 hidden lg:block shrink-0 mt-6 pt-6 border-t border-[#5e5e63]/30">Ideation</h2>
+              <button
+                onClick={() => {
+                  setActivePhase('stories');
+                  document.getElementById('section-stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className={`flex items-center gap-3 text-left px-4 py-3 rounded-lg transition-all whitespace-nowrap lg:whitespace-normal duration-300 border shrink-0 lg:shrink ${
+                  activePhase === 'stories'
+                    ? 'bg-[#f4c430]/10 border-[#f4c430] text-[#f4c430]' 
+                    : 'border-transparent text-[#fafafa]/60 hover:bg-[#5e5e63]/10 hover:text-[#fafafa]'
+                }`}
+              >
+                <Icon name="Lightbulb" className={`w-4 h-4 ${activePhase === 'stories' ? 'text-[#f4c430]' : 'text-[#fafafa]/50'}`} />
+                <span className="font-bold text-sm tracking-wide truncate lg:whitespace-normal">Story Board</span>
+              </button>
+
+            </aside>
+
+            {/* TIMELINE FEED */}
+            <div className="flex-1 p-4 sm:p-6 lg:p-12 overflow-y-auto pb-32">
+              <div className="max-w-4xl mx-auto space-y-24">
+                
+                {/* RENDER ALL CAMPAIGN PHASES */}
+                {campaigns.map((phase, phaseIdx) => (
+                  <section 
+                    key={phaseIdx} 
+                    id={`phase-${phaseIdx}`} 
+                    className="scroll-mt-24 lg:scroll-mt-32"
+                    onMouseEnter={() => setActivePhase(phaseIdx)}
+                  >
+                    {/* Phase Header */}
+                    <div className="mb-10">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="h-px flex-1 bg-gradient-to-r from-[#f15e27] to-transparent max-w-[50px]"></div>
+                        <span className="font-mono text-sm text-[#f15e27] tracking-widest">PHASE {phase.phase}</span>
+                      </div>
+                      <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">{phase.title}</h2>
+                      
+                      <div className="flex flex-col md:flex-row md:items-center gap-4 text-sm font-mono border-b border-[#5e5e63]/30 pb-6 mb-6">
+                        <div className="flex items-center gap-2 bg-[#5e5e63]/20 text-[#fafafa] px-3 py-1.5 rounded-full w-max">
+                          <Icon name="Calendar" className="w-4 h-4 text-[#f15e27]" />
+                          <span>{launchDate ? calculateDate(phase.timeframe.replace(/Day /g, ''), launchDate) : phase.timeframe}</span>
+                        </div>
+                      </div>
+
+                      <p className="text-base md:text-lg text-[#fafafa]/70 font-serif leading-relaxed italic max-w-3xl">
+                        "{phase.objective}"
+                      </p>
+
+                      {/* Phase Budgets */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mt-8 mb-4">
+                        {/* Media Production */}
+                        <div className="bg-[#5e5e63]/10 border border-[#5e5e63]/20 hover:border-[#f15e27]/50 transition-colors rounded-xl p-4 flex flex-col gap-2">
+                          <div className="flex items-center gap-2 text-[#fafafa]/60 text-xs font-mono uppercase tracking-wider">
+                            <Icon name="Film" className="w-4 h-4 text-[#f15e27]" /> Media Prod.
+                          </div>
+                          {isEditMode ? (
+                            <input 
+                              type="text"
+                              value={phase.budget?.mediaProduction || ""}
+                              onChange={(e) => updatePhaseBudget(phaseIdx, 'mediaProduction', e.target.value)}
+                              placeholder="e.g. ₹50,000"
+                              className="bg-[#0f0f10] border border-[#5e5e63]/50 focus:border-[#f15e27] rounded text-base md:text-lg font-bold text-[#fafafa] px-3 py-1.5 outline-none w-full transition-colors"
+                            />
+                          ) : (
+                            <div className="text-lg md:text-xl font-bold text-[#fafafa]">{phase.budget?.mediaProduction || "₹0"}</div>
+                          )}
+                        </div>
+
+                        {/* Performance Marketing */}
+                        <div className="bg-[#5e5e63]/10 border border-[#5e5e63]/20 hover:border-[#f15e27]/50 transition-colors rounded-xl p-4 flex flex-col gap-2">
+                          <div className="flex items-center gap-2 text-[#fafafa]/60 text-xs font-mono uppercase tracking-wider">
+                            <Icon name="Activity" className="w-4 h-4 text-[#f15e27]" /> Perf. Mktg
+                          </div>
+                          {isEditMode ? (
+                            <input 
+                              type="text"
+                              value={phase.budget?.performanceMarketing || ""}
+                              onChange={(e) => updatePhaseBudget(phaseIdx, 'performanceMarketing', e.target.value)}
+                              placeholder="To be determined"
+                              className="bg-[#0f0f10] border border-[#5e5e63]/50 focus:border-[#f15e27] rounded text-sm md:text-base font-bold text-[#fafafa] px-3 py-1.5 outline-none w-full transition-colors"
+                            />
+                          ) : (
+                            <div className="text-base md:text-lg font-bold text-[#fafafa]">{phase.budget?.performanceMarketing || "TBD"}</div>
+                          )}
+                        </div>
+
+                        {/* Agency Charges */}
+                        <div className="bg-[#5e5e63]/10 border border-[#5e5e63]/20 hover:border-[#f15e27]/50 transition-colors rounded-xl p-4 flex flex-col gap-2">
+                          <div className="flex items-center gap-2 text-[#fafafa]/60 text-xs font-mono uppercase tracking-wider">
+                            <Icon name="Briefcase" className="w-4 h-4 text-[#f15e27]" /> Agency
+                          </div>
+                          {isEditMode ? (
+                            <input 
+                              type="text"
+                              value={phase.budget?.agencyCharges || ""}
+                              onChange={(e) => updatePhaseBudget(phaseIdx, 'agencyCharges', e.target.value)}
+                              placeholder="e.g. ₹1,50,000"
+                              className="bg-[#0f0f10] border border-[#5e5e63]/50 focus:border-[#f15e27] rounded text-base md:text-lg font-bold text-[#fafafa] px-3 py-1.5 outline-none w-full transition-colors"
+                            />
+                          ) : (
+                            <div className="text-lg md:text-xl font-bold text-[#fafafa]">{phase.budget?.agencyCharges || "₹0"}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timeline Entries */}
+                    <div className="relative border-l border-[#5e5e63]/30 ml-2 md:ml-4 space-y-6 md:space-y-8">
+                      {phase.events.map((event, eventIdx) => {
+                        let currentIconName = "FileText"; // default
+                        if (event.icon === "Video") currentIconName = "Video";
+                        if (event.icon === "Film") currentIconName = "Film";
+                        if (event.icon === "Volume2") currentIconName = "Volume2";
+                        if (event.icon === "ImageIcon" || event.icon === "Image") currentIconName = "Image";
+                        if (event.icon === "Globe") currentIconName = "Globe";
+                        if (event.icon === "Activity") currentIconName = "Activity";
+                        if (event.icon === "Clock") currentIconName = "Clock";
+                        if (event.icon === "PlayCircle") currentIconName = "PlayCircle";
+                        
+                        return (
+                          <div 
+                            key={event.id}
+                            draggable={isEditMode}
+                            onDragStart={(e) => handleDragStart(e, phaseIdx, eventIdx)}
+                            onDragEnd={handleDragEnd}
+                            onDragOver={(e) => handleDragOver(e, phaseIdx, eventIdx)}
+                            className={`relative pl-6 md:pl-12 group ${isEditMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                          >
+                            {/* Timeline Node */}
+                            <div className="absolute -left-2 top-3 w-4 h-4 rounded-full bg-[#0f0f10] border-2 border-[#5e5e63] group-hover:border-[#f15e27] transition-colors duration-300 flex items-center justify-center z-10">
+                              <div className="w-1.5 h-1.5 rounded-full bg-[#f15e27] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            </div>
+
+                            {/* Content Card */}
+                            <div className={`bg-[#5e5e63]/10 hover:bg-[#5e5e63]/20 border ${isEditMode ? 'border-[#5e5e63]/50' : 'border-[#5e5e63]/20'} hover:border-[#f15e27]/50 transition-all duration-300 rounded-xl p-4 md:p-6 backdrop-blur-sm relative overflow-hidden`}>
+                              
+                              {/* Accent line on hover */}
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#f15e27] scale-y-0 group-hover:scale-y-100 transform origin-top transition-transform duration-300 hidden md:block"></div>
+
+                              {/* Editable Tools Container */}
+                              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                                
+                                {/* Drag Handle & Content Area */}
+                                <div className="flex-1 flex gap-2 md:gap-3">
+                                  
+                                  {/* Drag Handle visible only in edit mode */}
+                                  {isEditMode && (
+                                    <div className="mt-1 text-[#5e5e63] shrink-0 hidden sm:block">
+                                      <Icon name="GripVertical" className="w-5 h-5" />
+                                    </div>
+                                  )}
+
+                                  <div className="flex-1 min-w-0">
+                                    {/* Meta Info (Day/Date & Type) */}
+                                    <div className="flex items-center gap-2 md:gap-3 mb-3 flex-wrap">
+                                      <div className="flex items-center bg-[#f4c430] rounded shadow-sm text-[#0f0f10] font-mono text-[10px] md:text-xs font-bold overflow-hidden">
+                                        <span className="px-2 py-0.5 opacity-70 border-r border-black/10">
+                                          {launchDate && !isEditMode ? 'DATE' : 'DAY'}
+                                        </span>
+                                        {isEditMode ? (
+                                          <input 
+                                            type="text"
+                                            value={event.day}
+                                            onChange={(e) => updateEvent(phaseIdx, eventIdx, 'day', e.target.value)}
+                                            className="bg-transparent px-2 py-0.5 outline-none w-16 focus:bg-white/30"
+                                          />
+                                        ) : (
+                                          <span className="px-2 py-0.5">
+                                            {launchDate ? calculateDate(event.day, launchDate) : event.day}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <div className="flex items-center gap-1.5 text-[10px] md:text-xs font-mono text-[#f15e27]">
+                                        <Icon name={currentIconName} className="w-3.5 h-3.5 shrink-0 hidden sm:block" />
+                                        {isEditMode ? (
+                                          <input 
+                                            type="text"
+                                            value={event.type}
+                                            onChange={(e) => updateEvent(phaseIdx, eventIdx, 'type', e.target.value)}
+                                            className="bg-transparent border-b border-[#f15e27]/30 outline-none w-24 md:w-32 focus:border-[#f15e27] uppercase tracking-wider"
+                                          />
+                                        ) : (
+                                          <span className="uppercase tracking-wider truncate">{event.type}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Editable Title */}
+                                    <ContentEditable 
+                                      tagName="h3"
+                                      className="text-lg md:text-xl font-bold mb-2 tracking-tight group-hover:text-[#f15e27]"
+                                      html={event.name}
+                                      onChange={(val) => updateEvent(phaseIdx, eventIdx, 'name', val)}
+                                      isEditMode={isEditMode}
+                                      placeholder="Campaign Title"
+                                    />
+
+                                    {/* Editable Description */}
+                                    <ContentEditable 
+                                      tagName="div"
+                                      className="rich-text text-[#fafafa]/70 text-sm md:text-base leading-relaxed"
+                                      html={event.desc}
+                                      onChange={(val) => updateEvent(phaseIdx, eventIdx, 'desc', val)}
+                                      isEditMode={isEditMode}
+                                      placeholder="Enter detailed description here..."
+                                    />
+                                  </div>
+                                </div>
+                                
+                                {/* Right Side UI (Icons & Delete) */}
+                                <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-start gap-3 shrink-0 mt-2 lg:mt-0 pt-3 lg:pt-0 border-t border-[#5e5e63]/20 lg:border-t-0">
+                                  {/* Visual Indicator / Icon Selector */}
+                                  {isEditMode ? (
+                                    <div className="flex flex-row lg:flex-col items-center lg:items-end gap-2 w-full lg:w-auto">
+                                      <select 
+                                        value={event.icon}
+                                        onChange={(e) => updateEvent(phaseIdx, eventIdx, 'icon', e.target.value)}
+                                        className="bg-[#0f0f10] border border-[#5e5e63] text-[#fafafa] text-xs font-mono rounded px-2 py-1.5 outline-none focus:border-[#f15e27] flex-1 lg:flex-none"
+                                      >
+                                        <option value="Video">Video</option>
+                                        <option value="Film">Film</option>
+                                        <option value="FileText">FileText</option>
+                                        <option value="Image">Image</option>
+                                        <option value="Volume2">Volume2</option>
+                                        <option value="Globe">Globe</option>
+                                        <option value="Activity">Activity</option>
+                                        <option value="Clock">Clock</option>
+                                        <option value="PlayCircle">PlayCircle</option>
+                                      </select>
+                                      <button 
+                                        onClick={() => deleteEvent(phaseIdx, eventIdx)}
+                                        className="text-[#5e5e63] hover:text-red-500 transition-colors p-1.5 bg-[#0f0f10] rounded border border-[#5e5e63]/30"
+                                        title="Delete Card"
+                                      >
+                                        <Icon name="Trash2" className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#0f0f10] border border-[#5e5e63]/30 items-center justify-center text-[#fafafa]/30 group-hover:text-[#f15e27] transition-colors ml-auto lg:ml-0">
+                                      <Icon name={currentIconName} className="w-4 h-4 md:w-5 md:h-5" />
+                                    </div>
+                                  )}
+                                </div>
+
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* ADD NEW CARD BUTTON */}
+                      {isEditMode && (
+                        <div className="pl-6 md:pl-12 mt-4">
+                          <button 
+                            onClick={() => addEvent(phaseIdx)}
+                            className="w-full py-4 border-2 border-dashed border-[#5e5e63]/40 hover:border-[#f15e27]/60 hover:bg-[#f15e27]/5 rounded-xl flex items-center justify-center gap-2 text-[#5e5e63] hover:text-[#f15e27] transition-all font-mono text-xs md:text-sm"
+                          >
+                            <Icon name="Plus" className="w-4 h-4" /> Add New Campaign Card
+                          </button>
+                        </div>
+                      )}
+
+                    </div>
+                  </section>
+                ))}
+
+                {/* --- STORY IDEATION BOARD (MASONRY FIX) --- */}
+                <section 
+                  id="section-stories" 
+                  className="scroll-mt-24 lg:scroll-mt-32 pt-16 mt-16 border-t border-[#5e5e63]/30"
+                  onMouseEnter={() => setActivePhase('stories')}
+                >
+                  {/* Header */}
+                  <div className="mb-10">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-px flex-1 bg-gradient-to-r from-[#f4c430] to-transparent max-w-[50px]"></div>
+                      <span className="font-mono text-sm text-[#f4c430] tracking-widest">IDEATION</span>
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Story Board</h2>
+                    <p className="text-base md:text-lg text-[#fafafa]/70 font-serif leading-relaxed italic max-w-3xl">
+                      "Raw narratives, emotional hooks, and concepts waiting to be turned into active campaigns."
+                    </p>
+                  </div>
+
+                  {/* Story Grid - Masonry CSS using Columns */}
+                  <div className="columns-1 md:columns-2 gap-6 md:gap-8 w-full">
+                    {stories.map(story => (
+                      <div key={story.id} className={`break-inside-avoid mb-6 md:mb-8 bg-[#1a1a1c] border ${isEditMode ? 'border-[#5e5e63]/50' : 'border-[#5e5e63]/20'} hover:border-[#f4c430]/50 transition-colors p-6 md:p-8 rounded-xl relative group flex flex-col gap-4 shadow-lg`}>
+                        
+                        {/* Visual Tab */}
+                        <div className="absolute top-0 left-0 w-full h-1 bg-[#f4c430] opacity-50 rounded-t-xl"></div>
+
+                        <ContentEditable 
+                          tagName="h3"
+                          className="text-xl md:text-2xl font-bold tracking-tight text-[#fafafa] group-hover:text-[#f4c430] transition-colors pr-8"
+                          html={story.title}
+                          onChange={(val) => updateStory(story.id, 'title', val)}
+                          isEditMode={isEditMode}
+                          placeholder="Story Concept Title"
+                        />
+                        
+                        {/* Rich Text Editor Container - Implemented Internal Scrollbar & Masonry Break Avoidance */}
+                        <ContentEditable 
+                          tagName="div"
+                          className="rich-text text-[#fafafa]/70 text-sm md:text-base flex-1 max-h-[400px] overflow-y-auto custom-scrollbar pr-2"
+                          html={story.content}
+                          onChange={(val) => updateStory(story.id, 'content', val)}
+                          isEditMode={isEditMode}
+                          placeholder="Describe the narrative arc, visual style, or emotional hook here..."
+                        />
+
+                        {isEditMode && (
+                          <button 
+                            onClick={() => deleteStory(story.id)}
+                            className="absolute top-6 right-6 text-[#5e5e63] hover:text-red-500 transition-colors p-1.5 bg-[#0f0f10] rounded border border-[#5e5e63]/30"
+                            title="Delete Story Concept"
+                          >
+                            <Icon name="Trash2" className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    
+                    {/* Add Story Button - Avoid Break Inside Masonry */}
+                    {isEditMode && (
+                      <button 
+                        onClick={addStory}
+                        className="break-inside-avoid min-h-[150px] w-full border-2 border-dashed border-[#5e5e63]/40 hover:border-[#f4c430]/60 hover:bg-[#f4c430]/5 rounded-xl flex flex-col items-center justify-center gap-3 text-[#5e5e63] hover:text-[#f4c430] transition-all font-mono text-sm group mb-8"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-[#0f0f10] border border-[#5e5e63]/40 flex items-center justify-center group-hover:border-[#f4c430]/60 transition-colors">
+                          <Icon name="Plus" className="w-5 h-5" />
+                        </div>
+                        Add New Story Concept
+                      </button>
+                    )}
+                  </div>
+                </section>
+
+              </div>
+              
+              {/* FOOTER */}
+              <div className="mt-24 pt-12 border-t border-[#5e5e63]/30 flex flex-col items-center justify-center text-center opacity-50 pb-8">
+                <p className="font-mono text-xs tracking-widest uppercase">End of Initial Launch Window</p>
+                <p className="font-serif italic text-sm mt-2 mb-8">The journey continues.</p>
+                
+                <div className="font-bold tracking-widest text-[#f15e27] uppercase text-sm border-2 border-[#f15e27]/30 px-6 py-3 rounded-lg flex items-center gap-3">
+                  <Icon name="Film" className="w-4 h-4" />
+                  MADE BY KOOTHU
+                </div>
+              </div>
+
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
